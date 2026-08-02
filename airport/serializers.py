@@ -20,8 +20,41 @@ class CrewSerializer(serializers.ModelSerializer):
         fields = ("id", "first_name", "last_name", "full_name")
 
 
+class AirplaneSerializer(serializers.ModelSerializer):
+    airplane_type = serializers.CharField(
+        source="airplane_type.name", read_only=True
+    )
+
+    class Meta:
+        model = Airplane
+        fields = (
+            "id",
+            "name",
+            "rows",
+            "seats_in_row",
+            "capacity",
+            "airplane_type"
+        )
 
 
+class AirportSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Airport
+        fields = ("id", "name", "closest_big_city")
 
 
+class RouteSerializer(serializers.ModelSerializer):
+    source = serializers.CharField(
+        source="source.name", read_only=True
+    )
+    destination = serializers.CharField(
+        source="destination.name", read_only=True
+    )
+
+    class Meta:
+        model = Route
+        fields = (
+            "id", "source", "destination", "distance",
+        )
 
