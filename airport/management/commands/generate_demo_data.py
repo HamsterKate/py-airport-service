@@ -17,9 +17,10 @@ from airport.models import (
 )
 
 
-class Command(BaseCommand):
-    help = "Generate demo data for Airport API"
+User = get_user_model()
 
+
+class Command(BaseCommand):
     help = "Generate demo data for Airport API"
 
     def handle(self, *args, **options):
@@ -39,10 +40,16 @@ class Command(BaseCommand):
         self.create_users()
         self.create_orders()
         self.create_tickets()
-
+        
         self.stdout.write(
             self.style.SUCCESS("Demo data generated successfully!")
         )
+
+        self.stdout.write(
+        self.style.WARNING(
+            "All demo users password: demo12345"
+        )
+    )
 
     def clear_database(self):
         self.stdout.write("Clearing database...")
@@ -55,10 +62,11 @@ class Command(BaseCommand):
         Airplane.objects.all().delete()
         AirplaneType.objects.all().delete()
         Airport.objects.all().delete()
+        User.objects.filter(is_superuser=False).delete()
 
         self.stdout.write(
-        self.style.SUCCESS("✓ Database cleared")
-    )
+            self.style.SUCCESS("✓ Database cleared")
+        )
 
     def create_airports(self):
         self.stdout.write("Creating airports...")
@@ -295,29 +303,106 @@ class Command(BaseCommand):
         User = get_user_model()
 
         users_data = [
-            ("admin@example.com", "Admin", "User", True),
-            ("john@example.com", "John", "Smith", False),
-            ("emma@example.com", "Emma", "Johnson", False),
-            ("olivia@example.com", "Olivia", "Brown", False),
-            ("michael@example.com", "Michael", "Wilson", False),
+            ("john@example.com", "John", "Smith"),
+            ("emma@example.com", "Emma", "Johnson"),
+            ("olivia@example.com", "Olivia", "Brown"),
+            ("michael@example.com", "Michael", "Wilson"),
+            ("sophia@example.com", "Sophia", "Taylor"),
+            ("james@example.com", "James", "Anderson"),
+            ("amelia@example.com", "Amelia", "Martin"),
+            ("lucas@example.com", "Lucas", "White"),
         ]
 
-        for email, first_name, last_name, is_staff in users_data:
+        for email, first_name, last_name in users_data:
             User.objects.create_user(
                 email=email,
                 password="demo12345",
                 first_name=first_name,
                 last_name=last_name,
-                is_staff=is_staff,
             )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"✓ Created {User.objects.count()} users"
+                f"✓ Created {User.objects.filter(is_superuser=False).count()} users"
             )
         )
 
+    def create_orders(self):
+        self.stdout.write("Creating orders...")
 
+        users = list(User.objects.filter(is_superuser=False))
 
+        orders = []
 
+        for user in users:
+            for _ in range(random.randint(1, 3)):
+                orders.append(Order(user=user))
+
+        Order.objects.bulk_create(orders)
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✓ Created {Order.objects.count()} orders"
+            )
+        )
+
+    def create_tickets(self):
+        self.stdout.write("Creating tickets...")
+
+        flights = list(Flight.objects.all())
+        orders = list(Order.objects.all())
+
+        created = 0
+
+        for order in orders:
+            flight = random.choice(flights)
+            airplane = flight.airplane
+
+            taken = set(
+                Ticket.objects.filter(
+                    flight=flight
+                ).values_list(
+                    "row",
+                    "seat",
+                )
+            )
+
+            tickets_amount = random.randint(1, 3)
+
+            for _ in range(tickets_amount):
+
+                attempts = 0
+
+                while attempts < 50:
+
+                    row = random.randint(
+                        1,
+                        airplane.rows,
+                    )
+
+                    seat = random.randint(
+                        1,
+                        airplane.seats_in_row,
+                    )
+
+                    if (row, seat) not in taken:
+
+                        Ticket.objects.create(
+                            order=order,
+                            flight=flight,
+                            row=row,
+                            seat=seat,
+                        )
+
+                        taken.add((row, seat))
+                        created += 1
+                        break
+
+                    attempts += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✓ Created {created} tickets"
+            )
+        )
 
