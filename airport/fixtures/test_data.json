@@ -1,0 +1,145 @@
+[
+  {
+    "model": "airport.airport",
+    "pk": 1,
+    "fields": {
+      "name": "Boryspil International Airport",
+      "closest_big_city": "Kyiv"
+    }
+  },
+  {
+    "model": "airport.airport",
+    "pk": 2,
+    "fields": {
+      "name": "Heathrow Airport",
+      "closest_big_city": "London"
+    }
+  },
+  {
+    "model": "airport.airport",
+    "pk": 3,
+    "fields": {
+      "name": "John F. Kennedy International Airport",
+      "closest_big_city": "New York"
+    }
+  },
+  {
+    "model": "airport.airport",
+    "pk": 4,
+    "fields": {
+      "name": "Charles de Gaulle Airport",
+      "closest_big_city": "Paris"
+    }
+  },
+
+  {
+    "model": "airport.airplanetype",
+    "pk": 1,
+    "fields": {
+      "name": "Boeing 737-800"
+    }
+  },
+  {
+    "model": "airport.airplanetype",
+    "pk": 2,
+    "fields": {
+      "name": "Airbus A320"
+    }
+  },
+
+  {
+    "model": "airport.airplane",
+    "pk": 1,
+    "fields": {
+      "name": "UR-PSA",
+      "rows": 30,
+      "seats_in_row": 6,
+      "airplane_type": 1
+    }
+  },
+  {
+    "model": "airport.airplane",
+    "pk": 2,
+    "fields": {
+      "name": "G-EUOH",
+      "rows": 32,
+      "seats_in_row": 6,
+      "airplane_type": 2
+    }
+  },
+
+  {
+    "model": "airport.crew",
+    "pk": 1,
+    "fields": {
+      "first_name": "John",
+      "last_name": "Smith"
+    }
+  },
+  {
+    "model": "airport.crew",
+    "pk": 2,
+    "fields": {
+      "first_name": "Emily",
+      "last_name": "Johnson"
+    }
+  },
+  {
+    "model": "airport.crew",
+    "pk": 3,
+    "fields": {
+      "first_name": "Michael",
+      "last_name": "Brown"
+    }
+  },
+  {
+    "model": "airport.crew",
+    "pk": 4,
+    "fields": {
+      "first_name": "Sarah",
+      "last_name": "Wilson"
+    }
+  },
+
+  {
+    "model": "airport.route",
+    "pk": 1,
+    "fields": {
+      "source": 1,
+      "destination": 2,
+      "distance": 2135
+    }
+  },
+  {
+    "model": "airport.route",
+    "pk": 2,
+    "fields": {
+      "source": 2,
+      "destination": 3,
+      "distance": 5540
+    }
+  },
+
+  {
+    "model": "airport.flight",
+    "pk": 1,
+    "fields": {
+      "route": 1,
+      "airplane": 1,
+      "departure_time": "2026-08-15T08:00:00Z",
+      "arrival_time": "2026-08-15T11:30:00Z",
+      "crew": [1, 2]
+    }
+  },
+  {
+    "model": "airport.flight",
+    "pk": 2,
+    "fields": {
+      "route": 2,
+      "airplane": 2,
+      "departure_time": "2026-08-16T13:00:00Z",
+      "arrival_time": "2026-08-16T20:30:00Z",
+      "crew": [2, 3, 4]
+    }
+  }
+]
