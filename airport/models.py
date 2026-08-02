@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.db.models import (F, Q)
+from django.conf import settings
 
 
 class Airport(models.Model):
@@ -133,3 +134,68 @@ class Flight(models.Model):
         return (
             f"{self.route} - {self.departure_time:%Y-%m-%d %H:%M}"
         )
+
+
+class Order(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+
+    def __str__(self) -> str:
+        return str(self.created_at)
+
+
+class Ticket(models.Model):
+    row = models.PositiveIntegerField()
+    seat = models.PositiveIntegerField()
+    flight = models.ForeignKey(
+        Flight, on_delete=models.CASCADE, related_name="tickets"
+    )
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, related_name="tickets"
+    )
+
+    @staticmethod
+    def validate_ticket(
+        row, seat, airplane, error_to_raise
+    ) -> None:
+        for value, field_name, airplane_field in (
+            (row, "row", "rows"),
+            (seat, "seat", "seats_in_row"),
+        ):
+            count_attrs = getattr(airplane, airplane_field)
+            if not (1 <= value <= count_attrs):
+                raise error_to_raise(
+                    {
+                        field_name: f"{field_name}"
+                        f"number must be in available range: "
+                        f"(1, {airplane_field}): "
+                        f"(1, {count_attrs})"
+                    }
+                )
+
+    def clean(self):
+        super().clean()
+
+        if self.flight_id is None:
+            return
+
+        Ticket.validate_ticket(
+            self.row, self.seat, self.flight.airplane, ValidationError
+        )
+
+    def save(self, *args, **kwargs) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return (
+            f"{self.flight} "
+            f"(row: {self.row}, seat: {self.seat})"
+        )
+
+    class Meta:
+        unique_together = ["flight", "row", "seat"]
+        ordering = ["row", "seat"]

@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 
 from airport.models import (
-    Airplane, AirplaneType, Airport, Crew, Flight, Route
+    Airplane, AirplaneType, Airport, Crew, Flight, Order, Route, Ticket
 )
 
 
@@ -105,4 +105,45 @@ class FlightAdmin(admin.ModelAdmin):
         "route",
         "airplane"
     )
+
+
+@admin.register(Ticket)
+class TicketAdmin(admin.ModelAdmin):
+    list_display = (
+        "flight",
+        "row",
+        "seat",
+        "order",
+    )
+    ordering = (
+        "flight",
+        "row",
+        "seat",
+    )
+    list_filter = ("flight",)
+    list_select_related = ("flight", "order")
+
+
+class TicketInline(admin.TabularInline):
+    model = Ticket
+    extra = 1
+
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "created_at",
+        "user",
+    )
+    ordering = ("-created_at",)
+    search_fields = (
+        "user__email",
+        "user__first_name",
+        "user__last_name",
+    )
+    inlines = [TicketInline]
+
+
+
 
