@@ -129,10 +129,41 @@ class FlightCreateSerializer(serializers.ModelSerializer):
         )
 
 
+class TicketSerializer(serializers.ModelSerializer):
+    flight = FlightListSerializer(read_only=True)
+
+    class Meta:
+        model = Ticket
+        fields = (
+            "id",
+            "row",
+            "seat",
+            "flight",
+        )
 
 
+class TicketCreateSerializer(serializers.ModelSerializer):
 
+    class Meta:
+        model = Ticket
+        fields = (
+            "row",
+            "seat",
+            "flight",
+            "order",
+        )
 
+    def validate(self, attrs):
+        flight = attrs["flight"]
+
+        Ticket.validate_ticket(
+            attrs["row"],
+            attrs["seat"],
+            flight.airplane,
+            serializers.ValidationError,
+        )
+
+        return attrs
 
 
 
