@@ -1,7 +1,8 @@
 from django.contrib import admin
+from django.db.models import QuerySet
 
 from airport.models import (
-    Airplane, AirplaneType, Airport, Crew, Route
+    Airplane, AirplaneType, Airport, Crew, Flight, Route
 )
 
 
@@ -60,4 +61,48 @@ class CrewAdmin(admin.ModelAdmin):
     list_filter = ("first_name", "last_name")
 
 
+@admin.register(Flight)
+class FlightAdmin(admin.ModelAdmin):
+
+    @admin.display(description="Crew")
+    def crew_members(self, obj: Flight) -> str:
+        return ", ".join(
+            str(member)
+            for member in obj.crew.all()
+        )
+
+    def get_queryset(self, request) -> QuerySet:
+        queryset = super().get_queryset(request)
+
+        return (
+            queryset
+            .select_related(
+                "route",
+                "route__source",
+                "route__destination",
+                "airplane",
+            )
+            .prefetch_related("crew")
+        )
+
+    list_display = (
+        "route",
+        "airplane",
+        "departure_time",
+        "arrival_time",
+        "duration",
+        "crew_members",
+    )
+    ordering = ("departure_time",)
+    search_fields = (
+        "route__source__name",
+        "route__source__closest_big_city",
+        "route__destination__name",
+        "route__destination__closest_big_city",
+        "airplane__name"
+    )
+    list_filter = (
+        "route",
+        "airplane"
+    )
 
