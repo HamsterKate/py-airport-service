@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from airport.models import (
-    Airplane, AirplaneType, Airport
+    Airplane, AirplaneType, Airport, Crew, Route
 )
 
 
@@ -35,6 +35,29 @@ class AirplaneAdmin(admin.ModelAdmin):
     search_fields = ("name", "airplane_type__name")
     list_filter = ("airplane_type",)
 
+
+@admin.register(Route)
+class RouteAdmin(admin.ModelAdmin):
+    list_display = ("source", "destination", "distance")
+    ordering = (
+        "source__name",
+        "destination__name",
+    )
+    search_fields = (
+        "source__name",
+        "source__closest_big_city",
+        "destination__name",
+        "destination__closest_big_city",
+    )
+    list_filter = ("source", "destination")
+
+
+@admin.register(Crew)
+class CrewAdmin(admin.ModelAdmin):
+    list_display = ("first_name", "last_name")
+    ordering = ("first_name", "last_name")
+    search_fields = ("first_name", "last_name")
+    list_filter = ("first_name", "last_name")
 
 
 
