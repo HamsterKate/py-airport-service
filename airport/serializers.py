@@ -150,7 +150,6 @@ class TicketCreateSerializer(serializers.ModelSerializer):
             "row",
             "seat",
             "flight",
-            "order",
         )
 
     def validate(self, attrs):
@@ -164,6 +163,61 @@ class TicketCreateSerializer(serializers.ModelSerializer):
         )
 
         return attrs
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    tickets = TicketSerializer(
+        many=True,
+        read_only=True
+    )
+    user = serializers.CharField(
+        source="user.email",
+        read_only=True
+    )
+
+    class Meta:
+        model = Order
+        fields = (
+            "id",
+            "created_at",
+            "user",
+            "tickets",
+        )
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    tickets = TicketCreateSerializer(
+        many=True
+    )
+
+    class Meta:
+        model = Order
+        fields = (
+            "tickets",
+        )
+
+    def create(self, validated_data):
+        tickets_data = validated_data.pop("tickets")
+
+        user = self.context["request"].user
+
+        with transaction.atomic():
+            order = Order.objects.create(
+                user=user
+            )
+
+            for ticket_data in tickets_data:
+                Ticket.objects.create(
+                    order=order,
+                    **ticket_data
+                )
+
+        return order
+
+
+
+
+
 
 
 
