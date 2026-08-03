@@ -81,6 +81,7 @@ class FlightListSerializer(serializers.ModelSerializer):
         source="airplane.name",
         read_only=True
     )
+    duration = serializers.DurationField(read_only=True)
 
     class Meta:
         model = Flight
