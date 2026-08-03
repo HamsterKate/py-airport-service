@@ -6,6 +6,16 @@ from user.managers import UserManager
 
 
 class User(AbstractUser):
+    class Roles(models.TextChoices):
+        DISPATCHER = "dispatcher", _("Dispatcher")
+        CREW = "crew", _("Crew")
+        CUSTOMER = "customer", _("Customer")
+
+    role = models.CharField(
+        max_length=20,
+        choices=Roles.choices,
+        default=Roles.CUSTOMER,
+    )
     username = None
     email = models.EmailField(_("email address"), unique=True)
 
