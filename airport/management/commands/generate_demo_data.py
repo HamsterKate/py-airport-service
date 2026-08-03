@@ -1,24 +1,41 @@
 import random
 from datetime import timedelta
 
-from django.utils import timezone
-from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
 
+from airport.demo_data import (
+    AIRPLANES,
+    AIRPLANE_TYPES,
+    AIRPORTS,
+    CITIES,
+    COUNTRIES,
+    CREW_MEMBERS,
+    DEMO_PASSWORD,
+    ROUTES,
+    USERS,
+)
 from airport.models import (
-    Airport,
-    AirplaneType,
     Airplane,
+    AirplaneType,
+    Airport,
+    City,
+    Country,
     Crew,
-    Route,
     Flight,
     Order,
+    Route,
     Ticket,
 )
 
-
 User = get_user_model()
 
+ROLE_MAP = {
+    "dispatcher": User.Roles.DISPATCHER,
+    "crew": User.Roles.CREW,
+    "customer": User.Roles.CUSTOMER,
+}
 
 class Command(BaseCommand):
     help = "Generate demo data for Airport API"
@@ -30,6 +47,8 @@ class Command(BaseCommand):
 
         self.clear_database()
 
+        self.create_countries()
+        self.create_cities()
         self.create_airports()
         self.create_airplane_types()
         self.create_airplanes()
@@ -40,16 +59,16 @@ class Command(BaseCommand):
         self.create_users()
         self.create_orders()
         self.create_tickets()
-        
+
         self.stdout.write(
             self.style.SUCCESS("Demo data generated successfully!")
         )
 
         self.stdout.write(
-        self.style.WARNING(
-            "All demo users password: demo12345"
+            self.style.WARNING(
+                f"All demo users password: {DEMO_PASSWORD}"
+            )
         )
-    )
 
     def clear_database(self):
         self.stdout.write("Clearing database...")
@@ -62,31 +81,77 @@ class Command(BaseCommand):
         Airplane.objects.all().delete()
         AirplaneType.objects.all().delete()
         Airport.objects.all().delete()
-        User.objects.filter(is_superuser=False).delete()
+        City.objects.all().delete()
+        Country.objects.all().delete()
 
+        User.objects.filter(is_superuser=False).delete()
+        
         self.stdout.write(
             self.style.SUCCESS("✓ Database cleared")
+        )
+
+    def create_countries(self):
+        self.stdout.write("Creating countries...")
+
+        Country.objects.bulk_create(
+            [
+                Country(name=name, code=code)
+                for name, code in COUNTRIES
+            ]
+        )
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✓ Created {Country.objects.count()} countries"
+            )
+        )
+
+    def create_cities(self):
+        self.stdout.write("Creating cities...")
+
+        countries = {
+            country.code: country
+            for country in Country.objects.all()
+        }
+
+        City.objects.bulk_create(
+            [
+                City(
+                    name=name,
+                    country=countries[country_code],
+                )
+                for name, country_code in CITIES
+            ]
+        )
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✓ Created {City.objects.count()} cities"
+            )
         )
 
     def create_airports(self):
         self.stdout.write("Creating airports...")
 
-        airports = [
-            ("Boryspil International Airport", "Kyiv"),
-            ("Heathrow Airport", "London"),
-            ("Charles de Gaulle Airport", "Paris"),
-            ("Amsterdam Schiphol Airport", "Amsterdam"),
-            ("Frankfurt Airport", "Frankfurt"),
-            ("Warsaw Chopin Airport", "Warsaw"),
-            ("John F. Kennedy International Airport", "New York"),
-            ("Haneda Airport", "Tokyo"),
-        ]
+        cities = {
+            city.name: city
+            for city in City.objects.all()
+        }
 
-        for name, city in airports:
-            Airport.objects.create(
-                name=name,
-                closest_big_city=city,
-            )
+        Airport.objects.bulk_create(
+            [
+                Airport(
+                    name=airport_name,
+                    city=cities[city_name],
+                    closest_big_city=closest_big_city,
+                )
+                for (
+                    airport_name,
+                    city_name,
+                    closest_big_city,
+                ) in AIRPORTS
+            ]
+        )
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -97,19 +162,10 @@ class Command(BaseCommand):
     def create_airplane_types(self):
         self.stdout.write("Creating airplane types...")
 
-        airplane_types = [
-            "Boeing 737-800",
-            "Boeing 777-300ER",
-            "Airbus A320",
-            "Airbus A321neo",
-            "Embraer E190",
-            "ATR 72-600",
-        ]
-
         AirplaneType.objects.bulk_create(
             [
                 AirplaneType(name=name)
-                for name in airplane_types
+                for name in AIRPLANE_TYPES
             ]
         )
 
@@ -122,19 +178,6 @@ class Command(BaseCommand):
     def create_airplanes(self):
         self.stdout.write("Creating airplanes...")
 
-        airplane_data = [
-            ("UR-PSA", "Boeing 737-800", 30, 6),
-            ("UR-PSB", "Boeing 737-800", 30, 6),
-            ("UR-UIA", "Boeing 777-300ER", 45, 10),
-            ("G-EUOH", "Airbus A320", 30, 6),
-            ("G-EUPJ", "Airbus A320", 30, 6),
-            ("D-AIHC", "Airbus A321neo", 37, 6),
-            ("PH-BXA", "Boeing 737-800", 31, 6),
-            ("SP-LRA", "Embraer E190", 25, 4),
-            ("SP-LRB", "Embraer E190", 25, 4),
-            ("JA812A", "ATR 72-600", 18, 4),
-        ]
-
         airplane_types = {
             airplane_type.name: airplane_type
             for airplane_type in AirplaneType.objects.all()
@@ -144,11 +187,18 @@ class Command(BaseCommand):
             [
                 Airplane(
                     name=name,
+                    registration_number=registration,
                     airplane_type=airplane_types[type_name],
                     rows=rows,
                     seats_in_row=seats,
                 )
-                for name, type_name, rows, seats in airplane_data
+                for (
+                    name,
+                    registration,
+                    type_name,
+                    rows,
+                    seats,
+                ) in AIRPLANES
             ]
         )
 
@@ -161,36 +211,13 @@ class Command(BaseCommand):
     def create_crew(self):
         self.stdout.write("Creating crew members...")
 
-        crew_members = [
-            ("John", "Smith"),
-            ("Emma", "Johnson"),
-            ("Michael", "Brown"),
-            ("Olivia", "Davis"),
-            ("William", "Miller"),
-            ("Sophia", "Wilson"),
-            ("James", "Moore"),
-            ("Isabella", "Taylor"),
-            ("Benjamin", "Anderson"),
-            ("Mia", "Thomas"),
-            ("Lucas", "Jackson"),
-            ("Charlotte", "White"),
-            ("Henry", "Harris"),
-            ("Amelia", "Martin"),
-            ("Alexander", "Thompson"),
-            ("Evelyn", "Garcia"),
-            ("Daniel", "Martinez"),
-            ("Harper", "Robinson"),
-            ("Matthew", "Clark"),
-            ("Emily", "Rodriguez"),
-        ]
-
         Crew.objects.bulk_create(
             [
                 Crew(
                     first_name=first_name,
                     last_name=last_name,
                 )
-                for first_name, last_name in crew_members
+                for first_name, last_name in CREW_MEMBERS
             ]
         )
 
@@ -208,35 +235,6 @@ class Command(BaseCommand):
             for airport in Airport.objects.all()
         }
 
-        route_data = [
-            ("Kyiv", "London", 2130),
-            ("Kyiv", "Warsaw", 690),
-            ("Kyiv", "Paris", 2020),
-            ("Kyiv", "Frankfurt", 1540),
-
-            ("London", "New York", 5567),
-            ("London", "Paris", 344),
-            ("London", "Amsterdam", 358),
-            ("London", "Frankfurt", 638),
-
-            ("Paris", "Amsterdam", 430),
-            ("Paris", "Frankfurt", 478),
-            ("Paris", "Warsaw", 1366),
-
-            ("Amsterdam", "Frankfurt", 364),
-            ("Amsterdam", "Warsaw", 1094),
-
-            ("Frankfurt", "New York", 6200),
-            ("Frankfurt", "Tokyo", 9360),
-
-            ("Warsaw", "Frankfurt", 890),
-            ("Warsaw", "London", 1448),
-
-            ("Tokyo", "New York", 10870),
-            ("Tokyo", "London", 9560),
-            ("New York", "Paris", 5836),
-        ]
-
         Route.objects.bulk_create(
             [
                 Route(
@@ -244,7 +242,7 @@ class Command(BaseCommand):
                     destination=airports[destination],
                     distance=distance,
                 )
-                for source, destination, distance in route_data
+                for source, destination, distance in ROUTES
             ]
         )
 
@@ -263,7 +261,30 @@ class Command(BaseCommand):
 
         base_time = timezone.now()
 
-        flights = []
+        airlines = [
+            "PS",  # Ukraine
+            "BA",  # British Airways
+            "AF",  # Air France
+            "KL",  # KLM
+            "LH",  # Lufthansa
+            "LO",  # LOT
+            "JL",  # Japan Airlines
+            "AA",  # American Airlines
+        ]
+
+        statuses = [
+            Flight.Status.SCHEDULED,
+            Flight.Status.SCHEDULED,
+            Flight.Status.SCHEDULED,
+            Flight.Status.BOARDING,
+            Flight.Status.DELAYED,
+            Flight.Status.DEPARTED,
+            Flight.Status.ARRIVED,
+        ]
+
+        terminals = ["A", "B", "C", "D"]
+
+        created = 0
 
         for i, route in enumerate(routes):
             for j in range(2):
@@ -272,53 +293,49 @@ class Command(BaseCommand):
                     hours=j * 6,
                 )
 
-                duration_hours = random.randint(2, 12)
+                duration = random.randint(2, 12)
 
-                arrival = departure + timedelta(
-                    hours=duration_hours
-                )
+                arrival = departure + timedelta(hours=duration)
 
                 flight = Flight.objects.create(
                     route=route,
                     airplane=random.choice(airplanes),
                     departure_time=departure,
                     arrival_time=arrival,
+                    flight_number=(
+                        f"{random.choice(airlines)}"
+                        f"{100 + i * 2 + j}"
+                    ),
+                    status=random.choice(statuses),
+                    terminal=random.choice(terminals),
+                    gate=(
+                        f"{random.choice(terminals)}"
+                        f"{random.randint(1, 30)}"
+                    ),
                 )
 
                 flight.crew.set(
                     random.sample(crew_members, k=5)
                 )
 
-                flights.append(flight)
+                created += 1
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"✓ Created {len(flights)} flights"
+                f"✓ Created {created} flights"
             )
         )
 
     def create_users(self):
         self.stdout.write("Creating users...")
 
-        User = get_user_model()
-
-        users_data = [
-            ("john@example.com", "John", "Smith"),
-            ("emma@example.com", "Emma", "Johnson"),
-            ("olivia@example.com", "Olivia", "Brown"),
-            ("michael@example.com", "Michael", "Wilson"),
-            ("sophia@example.com", "Sophia", "Taylor"),
-            ("james@example.com", "James", "Anderson"),
-            ("amelia@example.com", "Amelia", "Martin"),
-            ("lucas@example.com", "Lucas", "White"),
-        ]
-
-        for email, first_name, last_name in users_data:
+        for email, first_name, last_name, role in USERS:
             User.objects.create_user(
                 email=email,
-                password="demo12345",
+                password=DEMO_PASSWORD,
                 first_name=first_name,
                 last_name=last_name,
+                role=ROLE_MAP[role],
             )
 
         self.stdout.write(
@@ -330,7 +347,11 @@ class Command(BaseCommand):
     def create_orders(self):
         self.stdout.write("Creating orders...")
 
-        users = list(User.objects.filter(is_superuser=False))
+        users = list(
+            User.objects.filter(
+                role=User.Roles.CUSTOMER
+            )
+        )
 
         orders = []
 
@@ -370,11 +391,9 @@ class Command(BaseCommand):
             tickets_amount = random.randint(1, 3)
 
             for _ in range(tickets_amount):
-
                 attempts = 0
 
                 while attempts < 50:
-
                     row = random.randint(
                         1,
                         airplane.rows,
@@ -386,7 +405,6 @@ class Command(BaseCommand):
                     )
 
                     if (row, seat) not in taken:
-
                         Ticket.objects.create(
                             order=order,
                             flight=flight,
@@ -405,4 +423,11 @@ class Command(BaseCommand):
                 f"✓ Created {created} tickets"
             )
         )
+
+
+
+
+
+
+
 
