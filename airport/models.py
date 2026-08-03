@@ -68,6 +68,7 @@ class Airplane(models.Model):
         on_delete=models.CASCADE,
         related_name="airplanes"
     )
+    registration_number = models.CharField(max_length=20, unique=True)
 
     @property
     def capacity(self) -> int:
