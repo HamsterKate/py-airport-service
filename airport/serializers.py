@@ -95,13 +95,9 @@ class FlightListSerializer(serializers.ModelSerializer):
         )
 
 
-class FlightDetailSerializer(serializers.ModelSerializer):
+class FlightPublicDetailSerializer(serializers.ModelSerializer):
     route = RouteSerializer(read_only=True)
     airplane = AirplaneSerializer(read_only=True)
-    crew = CrewSerializer(
-        many=True,
-        read_only=True
-    )
     duration = serializers.DurationField(read_only=True)
 
     class Meta:
@@ -110,11 +106,20 @@ class FlightDetailSerializer(serializers.ModelSerializer):
             "id",
             "route",
             "airplane",
-            "crew",
             "departure_time",
             "arrival_time",
             "duration",
         )
+
+
+class FlightStaffDetailSerializer(FlightPublicDetailSerializer):
+    crew = CrewSerializer(
+        many=True,
+        read_only=True
+    )
+
+    class Meta(FlightPublicDetailSerializer.Meta):
+        fields = FlightPublicDetailSerializer.Meta.fields + ("crew",)
 
 
 class FlightCreateSerializer(serializers.ModelSerializer):

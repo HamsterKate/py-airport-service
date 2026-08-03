@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework import mixins
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import GenericViewSet
 
 from airport.models import (
     Airplane,
@@ -7,34 +9,60 @@ from airport.models import (
     Crew,
     Order,
     Route,
+    Flight,
 )
 from airport.serializers import (
     AirplaneSerializer,
     AirplaneTypeSerializer,
     AirportSerializer,
     CrewSerializer,
+    FlightPublicDetailSerializer,
     OrderCreateSerializer,
     OrderSerializer,
     RouteSerializer,
+    FlightSerializer,
+    FlightListSerializer,
+    FlightStaffDetailSerializer,
+    FlightCreateSerializer,
 )
 
 
-class AirplaneTypeViewSet(viewsets.ModelViewSet):
+class AirplaneTypeViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = AirplaneType.objects.all()
     serializer_class = AirplaneTypeSerializer
 
 
-class CrewViewSet(viewsets.ModelViewSet):
+class CrewViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
 
 
-class AirportViewSet(viewsets.ModelViewSet):
+class AirportViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = Airport.objects.all()
     serializer_class = AirportSerializer
 
 
-class AirplaneViewSet(viewsets.ModelViewSet):
+class AirplaneViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = (
         Airplane.objects
         .select_related("airplane_type")
@@ -42,7 +70,12 @@ class AirplaneViewSet(viewsets.ModelViewSet):
     serializer_class = AirplaneSerializer
 
 
-class RouteViewSet(viewsets.ModelViewSet):
+class RouteViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = (
         Route.objects
         .select_related("source", "destination")
@@ -50,18 +83,12 @@ class RouteViewSet(viewsets.ModelViewSet):
     serializer_class = RouteSerializer
 
 
-from rest_framework import viewsets
-
-from airport.models import Flight
-from airport.serializers import (
-    FlightSerializer,
-    FlightListSerializer,
-    FlightDetailSerializer,
-    FlightCreateSerializer,
-)
-
-
-class FlightViewSet(viewsets.ModelViewSet):
+class FlightViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = (
         Flight.objects
         .select_related(
@@ -79,44 +106,45 @@ class FlightViewSet(viewsets.ModelViewSet):
             return FlightListSerializer
 
         if self.action == "retrieve":
-            return FlightDetailSerializer
+            if (
+                self.request.user.is_authenticated
+                and self.request.user.is_staff
+            ):
+                return FlightStaffDetailSerializer
 
-        if self.action in ("create", "update", "partial_update"):
+            return FlightPublicDetailSerializer
+
+        if self.action == "create":
             return FlightCreateSerializer
 
         return FlightSerializer
 
 
-class OrderViewSet(viewsets.ModelViewSet):
+class OrderViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.RetrieveModelMixin,
+    GenericViewSet
+):
     queryset = Order.objects.all()
+    permission_classes = (IsAuthenticated,)
     
     def get_queryset(self):
-        return (
+        queryset = (
             Order.objects
-            .filter(user=self.request.user)
             .prefetch_related(
                 "tickets",
                 "tickets__flight",
             )
         )
 
+        if self.request.user.is_staff:
+            return queryset
+
+        return queryset.filter(user=self.request.user)
+
     def get_serializer_class(self):
         if self.action == "create":
             return OrderCreateSerializer
 
         return OrderSerializer
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
