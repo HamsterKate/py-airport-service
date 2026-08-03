@@ -130,6 +130,13 @@ class Crew(models.Model):
 
 
 class Flight(models.Model):
+    class Status(models.TextChoices):
+        SCHEDULED = "scheduled", _("Scheduled")
+        BOARDING = "boarding", _("Boarding")
+        DELAYED = "delayed", _("Delayed")
+        DEPARTED = "departed", _("Departed")
+        ARRIVED = "arrived", _("Arrived")
+        CANCELLED = "cancelled", _("Cancelled")
     route = models.ForeignKey(
         Route,
         on_delete=models.CASCADE,
@@ -142,11 +149,18 @@ class Flight(models.Model):
     )
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
-    
+    flight_number = models.CharField(max_length=20, unique=True)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.SCHEDULED
+    )
     crew = models.ManyToManyField(
         Crew,
         related_name="flights"
     )
+    terminal = models.CharField(max_length=10, blank=True, null=True)
+    gate = models.CharField(max_length=10, blank=True, null=True)
 
     @property
     def duration(self) -> timedelta:
