@@ -6,8 +6,25 @@ from django.db.models import (F, Q)
 from django.conf import settings
 
 
+class Country(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    code = models.CharField(max_length=2, unique=True)
+
+    class Meta:
+        verbose_name_plural = "countries"
+        ordering = ("name",)
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class Airport(models.Model):
     name = models.CharField(max_length=255)
+    country = models.ForeignKey(
+        Country,
+        on_delete=models.CASCADE,
+        related_name="airports"
+    )
     closest_big_city = models.CharField(max_length=255)
 
     def __str__(self) -> str:
