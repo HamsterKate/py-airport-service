@@ -18,15 +18,20 @@ from airport.serializers import (
     AirportSerializer,
     CountrySerializer,
     CrewSerializer,
+    FlightCreateUpdateSerializer,
+    FlightDispatcherDetailSerializer,
     FlightPublicDetailSerializer,
     OrderCreateSerializer,
     OrderSerializer,
     RouteSerializer,
-    FlightSerializer,
+    # FlightSerializer,
     FlightListSerializer,
     FlightStaffDetailSerializer,
-    FlightCreateSerializer,
+    # FlightCreateSerializer,
 )
+
+from user.models import User
+
 
 class AirplaneTypeViewSet(
     mixins.ListModelMixin,
@@ -95,7 +100,11 @@ class FlightViewSet(
         .select_related(
             "route",
             "route__source",
+            "route__source__city",
+            "route__source__city__country",
             "route__destination",
+            "route__destination__city",
+            "route__destination__city__country",
             "airplane",
             "airplane__airplane_type",
         )
@@ -107,18 +116,23 @@ class FlightViewSet(
             return FlightListSerializer
 
         if self.action == "retrieve":
+            user = self.request.user
+
             if (
-                self.request.user.is_authenticated
-                and self.request.user.is_staff
+                user.is_authenticated
+                and user.role == User.Roles.DISPATCHER
+            ):
+                return FlightDispatcherDetailSerializer
+
+            if (
+                user.is_authenticated
+                and user.role == User.Roles.CREW
             ):
                 return FlightStaffDetailSerializer
 
             return FlightPublicDetailSerializer
 
-        if self.action == "create":
-            return FlightCreateSerializer
-
-        return FlightSerializer
+        return FlightCreateUpdateSerializer
 
 
 class OrderViewSet(

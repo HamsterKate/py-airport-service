@@ -336,6 +336,7 @@ class Command(BaseCommand):
                 first_name=first_name,
                 last_name=last_name,
                 role=ROLE_MAP[role],
+                is_staff=(role == "dispatcher"),
             )
 
         self.stdout.write(
