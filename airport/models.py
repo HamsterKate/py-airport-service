@@ -50,7 +50,7 @@ class Airport(models.Model):
     closest_big_city = models.CharField(max_length=255)
 
     def __str__(self) -> str:
-        return self.name
+        return f"{self.name}, {self.city}"
 
 
 class AirplaneType(models.Model):
