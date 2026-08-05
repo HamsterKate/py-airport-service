@@ -6,6 +6,7 @@ from airport.models import (
     Airplane,
     AirplaneType,
     Airport,
+    Country,
     Crew,
     Order,
     Route,
@@ -15,6 +16,7 @@ from airport.serializers import (
     AirplaneSerializer,
     AirplaneTypeSerializer,
     AirportSerializer,
+    CountrySerializer,
     CrewSerializer,
     FlightPublicDetailSerializer,
     OrderCreateSerializer,
@@ -25,7 +27,6 @@ from airport.serializers import (
     FlightStaffDetailSerializer,
     FlightCreateSerializer,
 )
-
 
 class AirplaneTypeViewSet(
     mixins.ListModelMixin,
