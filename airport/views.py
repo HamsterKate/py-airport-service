@@ -1,7 +1,17 @@
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import (
+    MultiPartParser, FormParser
+)
 
-from airport.filters import FlightFilter, RouteFilter
+from airport.filters import (
+    FlightFilter, RouteFilter
+)
+
 from airport.models import (
     Airplane,
     AirplaneType,
@@ -13,6 +23,7 @@ from airport.models import (
 )
 from airport.serializers import (
     AirplaneSerializer,
+    AirplaneTypeImageSerializer,
     AirplaneTypeSerializer,
     AirportSerializer,
     CrewSerializer,
@@ -23,25 +34,59 @@ from airport.serializers import (
     OrderCreateSerializer,
     OrderSerializer,
     RouteSerializer,
-    # FlightSerializer,
     FlightListSerializer,
     FlightStaffDetailSerializer,
-    # FlightCreateSerializer,
 )
 
 from user.models import User
 
-from airport.permissions import IsCustomerOrDispatcher
+from airport.permissions import (
+    IsCustomerOrDispatcher, IsDispatcherOrReadOnly
+)
 
 
 class AirplaneTypeViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
-    queryset = AirplaneType.objects.all()
+    queryset = AirplaneType.objects.all().order_by("name")
     serializer_class = AirplaneTypeSerializer
+    permission_classes = (IsDispatcherOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action == "upload_image":
+            return AirplaneTypeImageSerializer
+
+        return super().get_serializer_class()
+
+    @extend_schema(
+        request={
+            "multipart/form-data": AirplaneTypeImageSerializer,
+        },
+        responses=AirplaneTypeImageSerializer,
+        description="Upload an image for the airplane type.",
+    )
+    @action(
+        methods=["post"],
+        detail=True,
+        parser_classes=[MultiPartParser],
+        url_path="upload-image",
+    )
+    def upload_image(self, request, pk=None) -> Response:
+        airplane_type = self.get_object()
+
+        serializer = self.get_serializer(
+            airplane_type,
+            data=request.data,
+            partial=True,
+        )
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
 
 
 class CrewViewSet(

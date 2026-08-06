@@ -143,30 +143,36 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "Airport API",
-    "DESCRIPTION": "API for airport management service",
+    "TITLE": "Airport Management API",
+    "DESCRIPTION": """
+API for airport management system.
+
+Features:
+- Flight management
+- Airport and route management
+- Airplane fleet management
+- Ticket ordering
+- Role-based access control
+
+User roles:
+- Dispatcher: manages flights and airport data
+- Crew: views detailed flight information
+- Customer: creates and manages own orders
+- Anonymous users: read public information
+""",
     "VERSION": "1.0.0",
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_SETTINGS": {
+        "deeplinking": True,
+        "defaultModelRendering": "model",
+        "defaultModelsExpandDepth": 2,
+        "defaultModelExpandDepth": 2
+    }
 }
 
 #as for JWT settings, you can customize them according to your needs. Here's an example configuration:
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
-}
-
-SPECTACULAR_SETTINGS = {
-    "TITLE": "Airport API",
-    "DESCRIPTION": "API for airport management service",
-    "VERSION": "1.0.0",
-    "SERVE_INCLUDE_SCHEMA": False,
-    "SECURITY": [{"BearerAuth": []}],
-    "COMPONENTS": {
-        "securitySchemes": {
-            "BearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT",
-            }
-        }
-    },
 }

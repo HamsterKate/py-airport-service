@@ -34,6 +34,12 @@ class CitySerializer(serializers.ModelSerializer):
         fields = ("id", "name", "country")
 
 
+class AirplaneTypeImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AirplaneType
+        fields = ("image",)
+
+        
 class AirplaneTypeSerializer(serializers.ModelSerializer):
 
     class Meta:
