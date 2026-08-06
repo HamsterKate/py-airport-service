@@ -1,12 +1,11 @@
 from rest_framework import mixins
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import GenericViewSet
 
+from airport.filters import FlightFilter, RouteFilter
 from airport.models import (
     Airplane,
     AirplaneType,
     Airport,
-    Country,
     Crew,
     Order,
     Route,
@@ -16,7 +15,6 @@ from airport.serializers import (
     AirplaneSerializer,
     AirplaneTypeSerializer,
     AirportSerializer,
-    CountrySerializer,
     CrewSerializer,
     DispatcherOrderSerializer,
     FlightCreateUpdateSerializer,
@@ -54,6 +52,10 @@ class CrewViewSet(
 ):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
+    search_fields = (
+        "first_name",
+        "last_name",
+    )
 
 
 class AirportViewSet(
@@ -62,8 +64,16 @@ class AirportViewSet(
     mixins.RetrieveModelMixin,
     GenericViewSet
 ):
-    queryset = Airport.objects.all()
+    queryset = Airport.objects.select_related(
+        "city",
+        "city__country",
+    )
     serializer_class = AirportSerializer
+    search_fields = (
+        "name",
+        "city__name",
+        "city__country__name",
+    )
 
 
 class AirplaneViewSet(
@@ -77,6 +87,9 @@ class AirplaneViewSet(
         .select_related("airplane_type")
     )
     serializer_class = AirplaneSerializer
+    filterset_fields = ("airplane_type",)
+    search_fields = ("name", "registration_number")
+    ordering_fields = ("name",)
 
 
 class RouteViewSet(
@@ -87,9 +100,24 @@ class RouteViewSet(
 ):
     queryset = (
         Route.objects
-        .select_related("source", "destination")
-    )
+        .select_related(
+            "source",
+            "source__city",
+            "source__city__country",
+            "destination",
+            "destination__city",
+            "destination__city__country"
+        )
+    )       
     serializer_class = RouteSerializer
+    filterset_class = RouteFilter
+    search_fields = (
+        "source__name",
+        "destination__name",
+        "source__city__name",
+        "destination__city__name"
+    )
+    ordering_fields = ("source__name", "destination__name")
 
 
 class FlightViewSet(
@@ -112,6 +140,20 @@ class FlightViewSet(
             "airplane__airplane_type",
         )
         .prefetch_related("crew")
+        .order_by("departure_time")
+    )
+    filterset_class = FlightFilter
+    search_fields = (
+        "route__source__name",
+        "route__source__city__name",
+        "route__destination__name",
+        "route__destination__city__name",
+        "flight_number",
+        "airplane__registration_number"
+    )
+    ordering_fields = (
+        "departure_time",
+        "arrival_time"
     )
 
     def get_serializer_class(self):
@@ -160,6 +202,8 @@ class OrderViewSet(
         )
     )
     permission_classes = (IsCustomerOrDispatcher,)
+    filterset_fields = ("user",)
+    ordering_fields = ("created_at",)
 
     def get_queryset(self):
         queryset = self.queryset
