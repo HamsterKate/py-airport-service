@@ -1,9 +1,15 @@
+from pathlib import Path
 import random
 from datetime import timedelta
+import shutil
 
+from django.core.files import File
+from django.utils.text import slugify
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+
+from airport_service import settings
 
 from airport.demo_data import (
     AIRPLANES,
@@ -72,6 +78,11 @@ class Command(BaseCommand):
 
     def clear_database(self):
         self.stdout.write("Clearing database...")
+
+        media_dir = Path(settings.MEDIA_ROOT, "uploads", "airplane-types")
+
+        if media_dir.exists():
+            shutil.rmtree(media_dir)
 
         Ticket.objects.all().delete()
         Order.objects.all().delete()
@@ -162,19 +173,31 @@ class Command(BaseCommand):
     def create_airplane_types(self):
         self.stdout.write("Creating airplane types...")
 
-        AirplaneType.objects.bulk_create(
-            [
-                AirplaneType(name=name)
-                for name in AIRPLANE_TYPES
-            ]
+        seed_dir = (
+            settings.BASE_DIR
+            / "media_seed"
+            / "airplane_types"
         )
+
+        for name in AIRPLANE_TYPES:
+            airplane_type = AirplaneType.objects.create(name=name)
+
+            image_path = seed_dir / f"{slugify(name)}.png"
+
+            if image_path.exists():
+                with image_path.open("rb") as image:
+                    airplane_type.image.save(
+                        image_path.name,
+                        File(image),
+                        save=True,
+                    )
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"✓ Created {AirplaneType.objects.count()} airplane types"
             )
         )
-
+        
     def create_airplanes(self):
         self.stdout.write("Creating airplanes...")
 

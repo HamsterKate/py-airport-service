@@ -1,9 +1,13 @@
+from __future__ import annotations
 from datetime import timedelta
+import os
+import uuid
 
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.db.models import (F, Q)
 from django.conf import settings
+from django.template.defaultfilters import slugify
 from django.utils.translation import gettext_lazy as _
 
 
@@ -53,8 +57,26 @@ class Airport(models.Model):
         return f"{self.name}, {self.city}"
 
 
+def airplane_type_image_path(
+    instance: AirplaneType,
+    filename: str
+) -> str:
+    _, extension = os.path.splitext(filename)
+
+    return os.path.join(
+        "uploads/airplane-types/",
+        f"{slugify(instance.name)}-{uuid.uuid4()}{extension}"
+    )
+
+
 class AirplaneType(models.Model):
     name = models.CharField(max_length=100, unique=True)
+    image = models.ImageField(
+        upload_to=airplane_type_image_path,
+        blank=True,
+        null=True,
+        help_text="Representative image of the airplane type."
+    )
 
     def __str__(self) -> str:
         return self.name
