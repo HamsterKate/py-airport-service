@@ -3,7 +3,9 @@ from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import (
+    extend_schema, extend_schema_view
+)
 from rest_framework.parsers import (
     MultiPartParser, FormParser
 )
@@ -45,6 +47,20 @@ from airport.permissions import (
 )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List airplane types",
+        description="Retrieve all available airplane types.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve airplane type",
+        description="Retrieve detailed information about an airplane type.",
+    ),
+    create=extend_schema(
+        summary="Create airplane type",
+        description="Create a new airplane type. Available only to dispatchers.",
+    ),
+)
 class AirplaneTypeViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -62,11 +78,12 @@ class AirplaneTypeViewSet(
         return super().get_serializer_class()
 
     @extend_schema(
+        summary="Upload airplane type image",
+        description="Upload or replace the representative image for an airplane type.",
         request={
             "multipart/form-data": AirplaneTypeImageSerializer,
         },
         responses=AirplaneTypeImageSerializer,
-        description="Upload an image for the airplane type.",
     )
     @action(
         methods=["post"],
@@ -89,13 +106,29 @@ class AirplaneTypeViewSet(
         return Response(serializer.data)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List crew members",
+        description="Retrieve a list of all crew members.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve crew member",
+        description="Retrieve detailed information about a crew member.",
+    ),
+    create=extend_schema(
+        summary="Create crew member",
+        description="Create a new crew member. Dispatcher only.",
+    ),
+)
 class CrewViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
     GenericViewSet
 ):
-    queryset = Crew.objects.all()
+    queryset = Crew.objects.all().order_by(
+        "last_name", "first_name"
+    )
     serializer_class = CrewSerializer
     search_fields = (
         "first_name",
@@ -103,6 +136,20 @@ class CrewViewSet(
     )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List airports",
+        description="Retrieve a list of all airports.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve airport",
+        description="Retrieve detailed information about a single airport.",
+    ),
+    create=extend_schema(
+        summary="Create airport",
+        description="Create a new airport. Dispatcher only.",
+    ),
+)
 class AirportViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -112,7 +159,7 @@ class AirportViewSet(
     queryset = Airport.objects.select_related(
         "city",
         "city__country",
-    )
+    ).order_by("name")
     serializer_class = AirportSerializer
     search_fields = (
         "name",
@@ -121,6 +168,20 @@ class AirportViewSet(
     )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List airplanes",
+        description="Retrieve a list of all airplanes.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve airplane",
+        description="Retrieve detailed information about a single airplane.",
+    ),
+    create=extend_schema(
+        summary="Create airplane",
+        description="Create a new airplane. Dispatcher only.",
+    ),
+)
 class AirplaneViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -130,6 +191,7 @@ class AirplaneViewSet(
     queryset = (
         Airplane.objects
         .select_related("airplane_type")
+        .order_by("name")
     )
     serializer_class = AirplaneSerializer
     filterset_fields = ("airplane_type",)
@@ -137,6 +199,20 @@ class AirplaneViewSet(
     ordering_fields = ("name",)
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List routes",
+        description="Retrieve a list of all flight routes.",
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve route",
+        description="Retrieve detailed information about a single flight route.",
+    ),
+    create=extend_schema(
+        summary="Create route",
+        description="Create a new flight route. Dispatcher only.",
+    ),
+)
 class RouteViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -165,6 +241,26 @@ class RouteViewSet(
     ordering_fields = ("source__name", "destination__name")
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List flights",
+        description=(
+            "Retrieve a list of scheduled flights. "
+            "Supports filtering, searching, and ordering."
+        )
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve flight",
+        description=(
+            "Retrieve detailed information about a flight. "
+            "The response depends on the authenticated user's role."
+        )
+    ),
+    create=extend_schema(
+        summary="Create flight",
+        description="Create a new flight. Dispatcher only.",
+    ),
+)
 class FlightViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
@@ -225,6 +321,31 @@ class FlightViewSet(
         return FlightCreateUpdateSerializer
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List orders",
+        description=(
+            "Retrieve orders. "
+            "Customers can view only their own orders, "
+            "while dispatchers can view all orders."
+        ),
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve order",
+        description=(
+            "Retrieve detailed information about an order. "
+            "Customers can access only their own orders, "
+            "while dispatchers can access any order."
+        ),
+    ),
+    create=extend_schema(
+        summary="Create order",
+        description=(
+            "Create a new ticket order. "
+            "Available to authenticated customers and dispatchers."
+        ),
+    ),
+)
 class OrderViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
