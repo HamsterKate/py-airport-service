@@ -18,6 +18,7 @@ from airport.serializers import (
     AirportSerializer,
     CountrySerializer,
     CrewSerializer,
+    DispatcherOrderSerializer,
     FlightCreateUpdateSerializer,
     FlightDispatcherDetailSerializer,
     FlightPublicDetailSerializer,
@@ -31,6 +32,8 @@ from airport.serializers import (
 )
 
 from user.models import User
+
+from airport.permissions import IsCustomerOrDispatcher
 
 
 class AirplaneTypeViewSet(
@@ -141,25 +144,43 @@ class OrderViewSet(
     mixins.RetrieveModelMixin,
     GenericViewSet
 ):
-    queryset = Order.objects.all()
-    permission_classes = (IsAuthenticated,)
-    
-    def get_queryset(self):
-        queryset = (
-            Order.objects
-            .prefetch_related(
-                "tickets",
-                "tickets__flight",
-            )
+    queryset = (
+        Order.objects
+        .select_related("user")
+        .prefetch_related(
+            "tickets",
+            "tickets__flight",
+            "tickets__flight__route",
+            "tickets__flight__route__source",
+            "tickets__flight__route__source__city",
+            "tickets__flight__route__source__city__country",
+            "tickets__flight__route__destination",
+            "tickets__flight__route__destination__city",
+            "tickets__flight__route__destination__city__country",
         )
+    )
+    permission_classes = (IsCustomerOrDispatcher,)
 
-        if self.request.user.is_staff:
+    def get_queryset(self):
+        queryset = self.queryset
+        user = self.request.user
+
+        if (
+            user.is_superuser
+            or user.role == User.Roles.DISPATCHER
+        ):
             return queryset
 
-        return queryset.filter(user=self.request.user)
+        return queryset.filter(user=user)
 
     def get_serializer_class(self):
         if self.action == "create":
             return OrderCreateSerializer
+
+        if (
+            self.request.user.is_superuser
+            or self.request.user.role == User.Roles.DISPATCHER
+        ):
+            return DispatcherOrderSerializer
 
         return OrderSerializer

@@ -3,7 +3,18 @@ from rest_framework.permissions import SAFE_METHODS, BasePermission
 from user.models import User
 
 
-class IsDispatcherOrReadOnly(BasePermission):
+class IsDispatcher(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.user.is_authenticated
+            and (
+                request.user.is_superuser
+                or request.user.role == User.Roles.DISPATCHER
+            )
+        )
+
+
+class IsDispatcherOrReadOnly(IsDispatcher):
     """
     Everyone can read.
     Only dispatchers can modify data.
@@ -14,11 +25,7 @@ class IsDispatcherOrReadOnly(BasePermission):
             return True
 
         return (
-            request.user.is_authenticated
-            and (
-                request.user.is_superuser
-                or request.user.role == User.Roles.DISPATCHER
-            )
+            super().has_permission(request, view)
         )
 
 
@@ -40,12 +47,22 @@ class IsCrewOrDispatcher(BasePermission):
         )
 
 
-class IsDispatcher(BasePermission):
+
+
+
+class IsCustomerOrDispatcher(BasePermission):
+    """
+    Access for customers and dispatchers.
+    """
+
     def has_permission(self, request, view):
         return (
             request.user.is_authenticated
             and (
                 request.user.is_superuser
-                or request.user.role == User.Roles.DISPATCHER
+                or request.user.role in (
+                    User.Roles.CUSTOMER,
+                    User.Roles.DISPATCHER,
+                )
             )
         )
