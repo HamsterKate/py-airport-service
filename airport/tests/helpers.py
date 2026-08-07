@@ -20,11 +20,11 @@ from user.tests.helpers import create_user
 
 
 def create_country(**params) -> Country:
-    count = Country.objects.count()
+    number = Country.objects.count()
 
     defaults = {
         "name": f"Country-{uuid.uuid4().hex[:6]}",
-        "code": uuid.uuid4().hex[:2].upper(),
+        "code": f"{number:02X}",
     }
 
     defaults.update(params)
@@ -33,10 +33,13 @@ def create_country(**params) -> Country:
 
 
 def create_city(**params) -> City:
-    country = params.pop("country", create_country())
+    country = params.pop("country", None)
+
+    if country is None:
+        country = create_country()
 
     defaults = {
-        "name": f"City {City.objects.count()}",
+        "name": f"City-{uuid.uuid4().hex[:6]}",
         "country": country,
     }
     defaults.update(params)
@@ -45,10 +48,13 @@ def create_city(**params) -> City:
 
 
 def create_airport(**params) -> Airport:
-    city = params.pop("city", create_city())
+    city = params.pop("city", None)
+
+    if city is None:
+        city = create_city()
 
     defaults = {
-        "name": f"Airport {Airport.objects.count()}",
+        "name": "Boryspil Airport",
         "city": city,
         "closest_big_city": "Kyiv",
     }
@@ -98,14 +104,13 @@ def create_crew(**params) -> Crew:
 
 
 def create_route(**params) -> Route:
-    source = params.pop(
-        "source",
-        create_airport(),
-    )
+    source = params.pop("source", None)
+    if source is None:
+        source = create_airport()
 
-    destination = params.pop(
-        "destination",
-        create_airport(
+    destination = params.pop("destination", None)
+    if destination is None:
+        destination = create_airport(
             name="Heathrow Airport",
             closest_big_city="London",
             city=create_city(
@@ -115,8 +120,7 @@ def create_route(**params) -> Route:
                     code="GB",
                 ),
             ),
-        ),
-    )
+        )
 
     defaults = {
         "source": source,

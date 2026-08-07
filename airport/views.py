@@ -31,6 +31,7 @@ from airport.serializers import (
     FlightPublicDetailSerializer,
     OrderCreateSerializer,
     OrderSerializer,
+    RouteCreateSerializer,
     RouteSerializer,
     FlightListSerializer,
     FlightStaffDetailSerializer,
@@ -232,6 +233,8 @@ class AirplaneViewSet(
     create=extend_schema(
         summary="Create route",
         description="Create a new flight route. Dispatcher only.",
+        request=RouteCreateSerializer,
+        responses=RouteSerializer
     ),
 )
 class RouteViewSet(
@@ -252,6 +255,9 @@ class RouteViewSet(
         "destination__name",
     )
     serializer_class = RouteSerializer
+    serializer_action_classes = {
+        "create": RouteCreateSerializer
+    }
     filterset_class = RouteFilter
     search_fields = (
         "source__name",
@@ -260,6 +266,12 @@ class RouteViewSet(
         "destination__city__name",
     )
     ordering_fields = ("source__name", "destination__name")
+
+    def get_serializer_class(self):
+        return self.serializer_action_classes.get(
+            self.action,
+            self.serializer_class
+        )
 
 
 @extend_schema_view(

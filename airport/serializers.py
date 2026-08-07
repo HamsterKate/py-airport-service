@@ -113,7 +113,7 @@ class AirportCreateSerializer(serializers.ModelSerializer):
             "city",
             "closest_big_city",
         )
-        
+
 
 class RouteSerializer(serializers.ModelSerializer):
     source = serializers.StringRelatedField(read_only=True)
@@ -122,8 +122,31 @@ class RouteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Route
         fields = (
-            "id", "source", "destination", "distance",
+            "id",
+            "source",
+            "destination",
+            "distance",
         )
+
+
+class RouteCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Route
+        fields = (
+            "id",
+            "source",
+            "destination",
+            "distance",
+        )
+
+    def validate(self, attrs):
+        if attrs["source"] == attrs["destination"]:
+            raise serializers.ValidationError(
+                "Source and destination airports must be different."
+            )
+
+        return attrs
 
 
 class FlightCreateUpdateSerializer(serializers.ModelSerializer):
