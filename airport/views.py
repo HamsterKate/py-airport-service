@@ -22,6 +22,7 @@ from airport.serializers import (
     AirplaneSerializer,
     AirplaneTypeImageSerializer,
     AirplaneTypeSerializer,
+    AirportCreateSerializer,
     AirportSerializer,
     CrewSerializer,
     DispatcherOrderSerializer,
@@ -146,6 +147,8 @@ class CrewViewSet(
     create=extend_schema(
         summary="Create airport",
         description="Create a new airport. Dispatcher only.",
+        request=AirportCreateSerializer,
+        responses=AirportSerializer
     ),
 )
 class AirportViewSet(
@@ -159,11 +162,20 @@ class AirportViewSet(
         "city__country",
     ).order_by("name")
     serializer_class = AirportSerializer
+    serializer_action_classes = {
+        "create": AirportCreateSerializer
+    }
     search_fields = (
         "name",
         "city__name",
         "city__country__name",
     )
+
+    def get_serializer_class(self):
+        return self.serializer_action_classes.get(
+            self.action,
+            self.serializer_class
+        )
 
 
 @extend_schema_view(

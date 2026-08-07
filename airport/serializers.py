@@ -104,6 +104,17 @@ class AirportSerializer(serializers.ModelSerializer):
         fields = ("id", "name", "city", "closest_big_city")
 
 
+class AirportCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Airport
+        fields = (
+            "id",
+            "name",
+            "city",
+            "closest_big_city",
+        )
+        
+
 class RouteSerializer(serializers.ModelSerializer):
     source = serializers.StringRelatedField(read_only=True)
     destination = serializers.StringRelatedField(read_only=True)

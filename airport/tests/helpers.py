@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 
 from django.utils import timezone
@@ -19,10 +20,13 @@ from user.tests.helpers import create_user
 
 
 def create_country(**params) -> Country:
+    count = Country.objects.count()
+
     defaults = {
-        "name": "Ukraine",
-        "code": "UA",
+        "name": f"Country-{uuid.uuid4().hex[:6]}",
+        "code": uuid.uuid4().hex[:2].upper(),
     }
+
     defaults.update(params)
 
     return Country.objects.create(**defaults)
@@ -32,7 +36,7 @@ def create_city(**params) -> City:
     country = params.pop("country", create_country())
 
     defaults = {
-        "name": "Kyiv",
+        "name": f"City {City.objects.count()}",
         "country": country,
     }
     defaults.update(params)
@@ -44,7 +48,7 @@ def create_airport(**params) -> Airport:
     city = params.pop("city", create_city())
 
     defaults = {
-        "name": "Boryspil Airport",
+        "name": f"Airport {Airport.objects.count()}",
         "city": city,
         "closest_big_city": "Kyiv",
     }
