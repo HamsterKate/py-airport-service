@@ -9,7 +9,13 @@ from user.models import User
 class UserAdmin(DjangoUserAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        (_("Personal info"), {"fields": ("first_name", "last_name")}),
+        (_("Personal info"), {
+            "fields": (
+                "first_name",
+                "last_name",
+                "role",
+            )
+        }),
         (_("Permissions"), {
             "fields": (
                 "is_active",
@@ -33,6 +39,7 @@ class UserAdmin(DjangoUserAdmin):
                     "email",
                     "first_name",
                     "last_name",
+                    "role",
                     "password1",
                     "password2",
                     "is_staff",
@@ -46,12 +53,14 @@ class UserAdmin(DjangoUserAdmin):
         "email",
         "first_name",
         "last_name",
+        "role",
         "is_staff",
     )
     list_display_links = ("email",)
     search_fields = ("email", "first_name", "last_name")
     ordering = ("email",)
     list_filter = (
+        "role",
         "is_staff",
         "is_superuser",
         "is_active",
