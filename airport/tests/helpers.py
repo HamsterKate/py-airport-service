@@ -165,10 +165,10 @@ def create_flight(**params) -> Flight:
 
 
 def create_order(**params) -> Order:
-    user = params.pop(
-        "user",
-        create_user(),
-    )
+    user = params.pop("user", None)
+
+    if user is None:
+        user = create_user()
 
     defaults = {
         "user": user,
@@ -179,8 +179,13 @@ def create_order(**params) -> Order:
 
 
 def create_ticket(**params) -> Ticket:
-    flight = params.pop("flight", create_flight())
-    order = params.pop("order", create_order())
+    flight = params.pop("flight", None)
+    if flight is None:
+        flight = create_flight()
+
+    order = params.pop("order", None)
+    if order is None:
+        order = create_order()
 
     defaults = {
         "flight": flight,
