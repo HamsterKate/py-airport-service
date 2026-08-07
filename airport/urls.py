@@ -10,6 +10,9 @@ from airport.views import (
     OrderViewSet,
 )
 
+
+app_name = "airport"
+
 router = DefaultRouter()
 
 router.register("airplane-types", AirplaneTypeViewSet)

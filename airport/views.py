@@ -18,6 +18,7 @@ from airport.models import (
     Flight,
 )
 from airport.serializers import (
+    AirplaneCreateSerializer,
     AirplaneSerializer,
     AirplaneTypeImageSerializer,
     AirplaneTypeSerializer,
@@ -177,6 +178,8 @@ class AirportViewSet(
     create=extend_schema(
         summary="Create airplane",
         description="Create a new airplane. Dispatcher only.",
+        request=AirplaneCreateSerializer,
+        responses=AirplaneSerializer
     ),
 )
 class AirplaneViewSet(
@@ -191,9 +194,18 @@ class AirplaneViewSet(
         .order_by("name")
     )
     serializer_class = AirplaneSerializer
+    serializer_action_classes = {
+        "create": AirplaneCreateSerializer,
+    }
     filterset_fields = ("airplane_type",)
     search_fields = ("name", "registration_number")
     ordering_fields = ("name", "registration_number")
+
+    def get_serializer_class(self):
+        return self.serializer_action_classes.get(
+            self.action,
+            self.serializer_class,
+        )
 
 
 @extend_schema_view(

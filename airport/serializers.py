@@ -83,6 +83,19 @@ class AirplaneSerializer(serializers.ModelSerializer):
         )
 
 
+class AirplaneCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Airplane
+        fields = (
+            "id",
+            "name",
+            "registration_number",
+            "rows",
+            "seats_in_row",
+            "airplane_type",
+        )
+
+
 class AirportSerializer(serializers.ModelSerializer):
     city = CitySerializer(read_only=True)
 
