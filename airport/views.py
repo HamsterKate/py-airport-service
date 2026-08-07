@@ -330,15 +330,21 @@ class FlightViewSet(
         if self.action == "list":
             return FlightListSerializer
 
-        role_serializer_classes = {
-            User.Roles.DISPATCHER: FlightDispatcherDetailSerializer,
-            User.Roles.CREW: FlightStaffDetailSerializer,
-        }
-
         if self.action == "retrieve":
             user = self.request.user
 
-            return role_serializer_classes.get(user.role, FlightPublicDetailSerializer)
+            if not user.is_authenticated:
+                return FlightPublicDetailSerializer
+            
+            role_serializer_classes = {
+                User.Roles.DISPATCHER: FlightDispatcherDetailSerializer,
+                User.Roles.CREW: FlightStaffDetailSerializer,
+            }
+            
+            return role_serializer_classes.get(
+                user.role,
+                FlightPublicDetailSerializer
+            )
 
         return FlightCreateUpdateSerializer
 

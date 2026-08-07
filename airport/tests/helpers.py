@@ -115,10 +115,7 @@ def create_route(**params) -> Route:
             closest_big_city="London",
             city=create_city(
                 name="London",
-                country=create_country(
-                    name="United Kingdom",
-                    code="GB",
-                ),
+                country=create_country(),
             ),
         )
 
@@ -133,8 +130,13 @@ def create_route(**params) -> Route:
 
 
 def create_flight(**params) -> Flight:
-    route = params.pop("route", create_route())
-    airplane = params.pop("airplane", create_airplane())
+    route = params.pop("route", None)
+    if route is None:
+        route = create_route()
+
+    airplane = params.pop("airplane", None)
+    if airplane is None:
+        airplane = create_airplane()
 
     departure = params.pop("departure_time", timezone.now())
     arrival = params.pop(
