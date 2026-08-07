@@ -1,18 +1,12 @@
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework import status
-from drf_spectacular.utils import (
-    extend_schema, extend_schema_view
-)
-from rest_framework.parsers import (
-    MultiPartParser, FormParser
-)
+from drf_spectacular.utils import extend_schema, extend_schema_view
+from rest_framework.parsers import MultiPartParser
 
-from airport.filters import (
-    FlightFilter, RouteFilter
-)
+from airport.filters import FlightFilter, RouteFilter
 
 from airport.models import (
     Airplane,
@@ -42,9 +36,7 @@ from airport.serializers import (
 
 from user.models import User
 
-from airport.permissions import (
-    IsCustomerOrDispatcher, IsDispatcherOrReadOnly
-)
+from airport.permissions import IsCustomerOrDispatcher, IsDispatcherOrReadOnly
 
 
 @extend_schema_view(
@@ -69,13 +61,16 @@ class AirplaneTypeViewSet(
 ):
     queryset = AirplaneType.objects.all().order_by("name")
     serializer_class = AirplaneTypeSerializer
+    serializer_action_classes = {
+        "upload_image": AirplaneTypeImageSerializer,
+    }
     permission_classes = (IsDispatcherOrReadOnly,)
 
     def get_serializer_class(self):
-        if self.action == "upload_image":
-            return AirplaneTypeImageSerializer
-
-        return super().get_serializer_class()
+        return self.serializer_action_classes.get(
+            self.action,
+            self.serializer_class,
+        )
 
     @extend_schema(
         summary="Upload airplane type image",
@@ -91,7 +86,11 @@ class AirplaneTypeViewSet(
         parser_classes=[MultiPartParser],
         url_path="upload-image",
     )
-    def upload_image(self, request, pk=None) -> Response:
+    def upload_image(
+        self,
+        request: Request,
+        pk: int | None = None
+    ) -> Response:
         airplane_type = self.get_object()
 
         serializer = self.get_serializer(
@@ -124,11 +123,9 @@ class CrewViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
-    queryset = Crew.objects.all().order_by(
-        "last_name", "first_name"
-    )
+    queryset = Crew.objects.all().order_by("last_name", "first_name")
     serializer_class = CrewSerializer
     search_fields = (
         "first_name",
@@ -154,7 +151,7 @@ class AirportViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
     queryset = Airport.objects.select_related(
         "city",
@@ -186,7 +183,7 @@ class AirplaneViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
     queryset = (
         Airplane.objects
@@ -196,7 +193,7 @@ class AirplaneViewSet(
     serializer_class = AirplaneSerializer
     filterset_fields = ("airplane_type",)
     search_fields = ("name", "registration_number")
-    ordering_fields = ("name",)
+    ordering_fields = ("name", "registration_number")
 
 
 @extend_schema_view(
@@ -217,26 +214,26 @@ class RouteViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
-    queryset = (
-        Route.objects
-        .select_related(
-            "source",
-            "source__city",
-            "source__city__country",
-            "destination",
-            "destination__city",
-            "destination__city__country"
-        )
-    )       
+    queryset = Route.objects.select_related(
+        "source",
+        "source__city",
+        "source__city__country",
+        "destination",
+        "destination__city",
+        "destination__city__country",
+    ).order_by(
+        "source__name",
+        "destination__name",
+    )
     serializer_class = RouteSerializer
     filterset_class = RouteFilter
     search_fields = (
         "source__name",
         "destination__name",
         "source__city__name",
-        "destination__city__name"
+        "destination__city__name",
     )
     ordering_fields = ("source__name", "destination__name")
 
@@ -247,14 +244,14 @@ class RouteViewSet(
         description=(
             "Retrieve a list of scheduled flights. "
             "Supports filtering, searching, and ordering."
-        )
+        ),
     ),
     retrieve=extend_schema(
         summary="Retrieve flight",
         description=(
             "Retrieve detailed information about a flight. "
             "The response depends on the authenticated user's role."
-        )
+        ),
     ),
     create=extend_schema(
         summary="Create flight",
@@ -265,11 +262,10 @@ class FlightViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
     queryset = (
-        Flight.objects
-        .select_related(
+        Flight.objects.select_related(
             "route",
             "route__source",
             "route__source__city",
@@ -290,33 +286,23 @@ class FlightViewSet(
         "route__destination__name",
         "route__destination__city__name",
         "flight_number",
-        "airplane__registration_number"
+        "airplane__registration_number",
     )
-    ordering_fields = (
-        "departure_time",
-        "arrival_time"
-    )
+    ordering_fields = ("departure_time", "arrival_time", "flight_number")
 
     def get_serializer_class(self):
         if self.action == "list":
             return FlightListSerializer
 
+        role_serializer_classes = {
+            User.Roles.DISPATCHER: FlightDispatcherDetailSerializer,
+            User.Roles.CREW: FlightStaffDetailSerializer,
+        }
+
         if self.action == "retrieve":
             user = self.request.user
 
-            if (
-                user.is_authenticated
-                and user.role == User.Roles.DISPATCHER
-            ):
-                return FlightDispatcherDetailSerializer
-
-            if (
-                user.is_authenticated
-                and user.role == User.Roles.CREW
-            ):
-                return FlightStaffDetailSerializer
-
-            return FlightPublicDetailSerializer
+            return role_serializer_classes.get(user.role, FlightPublicDetailSerializer)
 
         return FlightCreateUpdateSerializer
 
@@ -350,22 +336,18 @@ class OrderViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
     mixins.RetrieveModelMixin,
-    GenericViewSet
+    GenericViewSet,
 ):
-    queryset = (
-        Order.objects
-        .select_related("user")
-        .prefetch_related(
-            "tickets",
-            "tickets__flight",
-            "tickets__flight__route",
-            "tickets__flight__route__source",
-            "tickets__flight__route__source__city",
-            "tickets__flight__route__source__city__country",
-            "tickets__flight__route__destination",
-            "tickets__flight__route__destination__city",
-            "tickets__flight__route__destination__city__country",
-        )
+    queryset = Order.objects.select_related("user").prefetch_related(
+        "tickets",
+        "tickets__flight",
+        "tickets__flight__route",
+        "tickets__flight__route__source",
+        "tickets__flight__route__source__city",
+        "tickets__flight__route__source__city__country",
+        "tickets__flight__route__destination",
+        "tickets__flight__route__destination__city",
+        "tickets__flight__route__destination__city__country",
     )
     permission_classes = (IsCustomerOrDispatcher,)
     filterset_fields = ("user",)
@@ -375,10 +357,7 @@ class OrderViewSet(
         queryset = self.queryset
         user = self.request.user
 
-        if (
-            user.is_superuser
-            or user.role == User.Roles.DISPATCHER
-        ):
+        if user.is_superuser or user.role == User.Roles.DISPATCHER:
             return queryset
 
         return queryset.filter(user=user)
