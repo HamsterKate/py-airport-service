@@ -1,9 +1,16 @@
+from django.contrib.auth.password_validation import validate_password
+
 from rest_framework import serializers
 
 from user.models import User
 
+from user.mixins import PasswordValidationMixin
 
-class UserSerializer(serializers.ModelSerializer):
+
+class UserSerializer(
+    PasswordValidationMixin,
+    serializers.ModelSerializer
+):
 
     class Meta:
         model = User
@@ -30,7 +37,10 @@ class UserSerializer(serializers.ModelSerializer):
         return User.objects.create_user(**validated_data)
 
 
-class UserMeSerializer(serializers.ModelSerializer):
+class UserMeSerializer(
+    PasswordValidationMixin,
+    serializers.ModelSerializer
+):
     class Meta:
         model = User
         fields = (
