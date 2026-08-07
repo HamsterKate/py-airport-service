@@ -4,13 +4,13 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from airport.models import Flight
-from airport.tests.helpers import (
+from airport.airport_tests.helpers import (
     create_airplane,
     create_crew,
     create_flight,
     create_route,
 )
-from user.tests.helpers import create_dispatcher, create_user
+from user.user_tests.helpers import create_dispatcher, create_user
 
 
 FLIGHT_URL = reverse("airport:flight-list")
@@ -235,4 +235,3 @@ class DispatcherFlightApiTests(APITestCase):
         # List endpoint intentionally uses FlightListSerializer,
         # so crew is not returned here.
         self.assertNotIn("crew", res.data[0])
-        

@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from airport.models import Crew
-from airport.tests.helpers import create_crew
-from user.tests.helpers import create_dispatcher, create_user
+from airport.airport_tests.helpers import create_crew
+from user.user_tests.helpers import create_dispatcher, create_user
 
 
 CREW_URL = reverse("airport:crew-list")

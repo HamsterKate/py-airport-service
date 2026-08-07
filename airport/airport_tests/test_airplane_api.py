@@ -4,11 +4,11 @@ from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
 from airport.models import Airplane
-from airport.tests.helpers import (
+from airport.airport_tests.helpers import (
     create_airplane,
     create_airplane_type,
 )
-from user.tests.helpers import (
+from user.user_tests.helpers import (
     create_dispatcher,
     create_user,
 )

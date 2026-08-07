@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APIClient, APITestCase
 
-from user.tests.helpers import (
+from user.user_tests.helpers import (
     create_dispatcher,
     create_user,
 )

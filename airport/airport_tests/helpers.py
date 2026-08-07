@@ -16,7 +16,7 @@ from airport.models import (
     Ticket,
 )
 
-from user.tests.helpers import create_user
+from user.user_tests.helpers import create_user
 
 
 def create_country(**params) -> Country:

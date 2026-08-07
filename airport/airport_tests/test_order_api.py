@@ -4,8 +4,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from airport.models import Order
-from airport.tests.helpers import create_flight, create_order
-from user.tests.helpers import (
+from airport.airport_tests.helpers import create_flight, create_order
+from user.user_tests.helpers import (
     create_user,
     create_dispatcher,
 )
