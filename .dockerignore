@@ -1,0 +1,35 @@
+# Virtual environment
+.venv/
+
+# Git
+.git/
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Django
+db.sqlite3
+static/
+staticfiles/
+
+# Environment
+.env
+
+# Media
+media/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
